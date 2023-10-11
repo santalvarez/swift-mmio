@@ -14,12 +14,16 @@ var package = Package(
     .macCatalyst(.v13),
   ],
   products: [
+    .executable(name: "MMIOClient", targets: ["MMIOClient"]),
+
     .library(name: "MMIO", targets: ["MMIO"])
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.1")
   ],
   targets: [
+    .executableTarget(name: "MMIOClient", dependencies: ["MMIO"]),
+
     .target(
       name: "MMIO",
       dependencies: ["MMIOMacros", "MMIOVolatile"]),

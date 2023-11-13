@@ -50,7 +50,7 @@ extension DeclGroupSyntax {
     if let decl = self.as(Other.self) { return decl }
 
     let node: any SyntaxProtocol =
-      (self as? DiagnosableDeclGroupSyntax)?.introducerKeyword ?? self
+      (self as? any DiagnosableDeclGroupSyntax)?.introducerKeyword ?? self
 
     context.error(
       at: node,

@@ -49,7 +49,7 @@ final class BitFieldMacroTests: XCTestCase {
 
   typealias ErrorDiagnostic = MMIOMacros.ErrorDiagnostic<TestMacro>
 
-  static let macros: [String: Macro.Type] = [
+  static let macros: [String: any Macro.Type] = [
     "Test": TestMacro.self
   ]
   static let indentationWidth = Trivia.spaces(2)

@@ -42,7 +42,9 @@ extension ErrorDiagnostic {
     .init("'\(Macro.signature)' can only be applied to properties")
   }
 
-  static func expectedDecl(_ decl: DiagnosableDeclGroupSyntax.Type) -> Self {
+  static func expectedDecl(
+    _ decl: any DiagnosableDeclGroupSyntax.Type
+  ) -> Self {
     .init(
       """
       '\(Macro.signature)' can only be applied to \(decl.declTypeName) \

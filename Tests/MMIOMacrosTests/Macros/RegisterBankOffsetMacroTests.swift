@@ -19,7 +19,7 @@ import XCTest
 final class RegisterBankOffsetMacroTests: XCTestCase {
   typealias ErrorDiagnostic = MMIOMacros.ErrorDiagnostic<RegisterBankOffsetMacro>
 
-  static let macros: [String: Macro.Type] = [
+  static let macros: [String: any Macro.Type] = [
     "RegisterBank": RegisterBankOffsetMacro.self
   ]
   static let indentationWidth = Trivia.spaces(2)

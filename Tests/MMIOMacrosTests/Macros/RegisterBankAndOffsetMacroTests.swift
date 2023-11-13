@@ -17,7 +17,7 @@ import XCTest
 @testable import MMIOMacros
 
 final class RegisterBankAndOffsetMacroTests: XCTestCase {
-  static let macros: [String: Macro.Type] = [
+  static let macros: [String: any Macro.Type] = [
     "RegisterBankType": RegisterBankMacro.self,
     "RegisterBank": RegisterBankOffsetMacro.self,
   ]

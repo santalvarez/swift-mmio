@@ -53,6 +53,7 @@ var package = Package(
     .target(name: "MMIOVolatile"),
   ])
 
+// MARK: - Package Feature Flags
 // Replace this with a native spm feature flag if/when supported
 let interposable = "FEATURE_INTERPOSABLE"
 try package.defineFeature(named: interposable, override: nil) { package in
@@ -61,10 +62,38 @@ try package.defineFeature(named: interposable, override: nil) { package in
   package.targets.append(
     .testTarget(name: "MMIOInterposableTests", dependencies: ["MMIO"]))
   for target in package.targets {
-    target.swiftDefine(interposable)
+    target.swiftSetting(.define(interposable))
   }
 }
 
+// MARK: - Language Feature Flags
+for target in package.targets {
+  // SE-0401 Remove Actor Isolation Inference caused by Property Wrappers
+  // Swift 5.9
+  target.swiftSetting(.enableUpcomingFeature("DisableOutwardActorInference"))
+
+  // SE-0384 Importing Forward Declared Objective-C Interfaces and Protocols
+  // Swift 5.9
+  target.swiftSetting(.enableUpcomingFeature("ImportObjcForwardDeclarations"))
+
+  // SE-0354 Regex Literals
+  // Swift 5.7
+  target.swiftSetting(.enableUpcomingFeature("BareSlashRegexLiterals"))
+
+  // SE-0335 Introduce existential any
+  // Swift 5.6
+  target.swiftSetting(.enableUpcomingFeature("ExistentialAny"))
+
+  // SE-0286 Forward-scan matching for trailing closures
+  // Swift 5.3
+  target.swiftSetting(.enableUpcomingFeature("ForwardTrailingClosures"))
+
+  // SE-0274 Concise magic file names
+  // Swift 5.8
+  target.swiftSetting(.enableUpcomingFeature("ConciseMagicFile"))
+}
+
+// MARK: - Helpers
 extension Package {
   func defineFeature(
     named featureName: String,
@@ -80,9 +109,9 @@ extension Package {
 }
 
 extension Target {
-  func swiftDefine(_ value: String) {
+  func swiftSetting(_ value: SwiftSetting) {
     var swiftSettings = self.swiftSettings ?? []
-    swiftSettings.append(.define(value))
+    swiftSettings.append(value)
     self.swiftSettings = swiftSettings
   }
 }

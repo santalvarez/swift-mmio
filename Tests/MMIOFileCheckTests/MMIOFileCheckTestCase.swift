@@ -19,7 +19,7 @@ import XCTest
 
 final class MMIOFileCheckTests: XCTestCase {
   func test() {
-    let selfFileURL = URL(filePath: #file)
+    let selfFileURL = URL(filePath: #filePath)
     let selfDirectoryURL =
       selfFileURL
       .deletingLastPathComponent()
@@ -76,7 +76,7 @@ class MMIOFileCheckTestCaseCommonSetup {
   var buildDirectoryURL: URL
   var packageDirectoryURL: URL
   var lock: NSLock
-  var buildResult: Result<Void, Error>?
+  var buildResult: Result<Void, any Error>?
 
   init(buildDirectoryURL: URL, packageDirectoryURL: URL) {
     self.buildDirectoryURL = buildDirectoryURL

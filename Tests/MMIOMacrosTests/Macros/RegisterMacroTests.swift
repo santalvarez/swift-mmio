@@ -19,7 +19,7 @@ import XCTest
 final class RegisterMacroTests: XCTestCase {
   typealias ErrorDiagnostic = MMIOMacros.ErrorDiagnostic<RegisterMacro>
 
-  static let macros: [String: Macro.Type] = [
+  static let macros: [String: any Macro.Type] = [
     "Register": RegisterMacro.self,
     "Reserved": ReservedMacro.self,
     "ReadWrite": ReadWriteMacro.self,

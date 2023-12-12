@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if os(macOS)
+#if os(macOS) || os(Linux)
 // FIXME: switch over to swift-testing
 // XCTest is really painful for dynamic test lists
 
@@ -62,6 +62,9 @@ final class MMIOFileCheckTests: XCTestCase {
 
 class MMIOFileCheckTestCaseSetup {
   struct Result {
+    var fileCheckURL: URL
+    var swiftURL: URL
+    var swiftcURL: URL
     var buildOutputsURL: URL
   }
 
@@ -96,28 +99,33 @@ class MMIOFileCheckTestCaseSetup {
   }
 
   private func _run() throws -> Result {
-    print("Locating FileCheck...")
-    _ = try sh("which FileCheck")
+    print("Locating Tools...")
+    let fileCheckURL = URL(
+      fileURLWithPath: try sp("/usr/bin/which", "FileCheck"))
+    let swiftURL = URL(
+      fileURLWithPath: try sp("/usr/bin/which", "swift"))
+    let swiftcURL = URL(
+      fileURLWithPath: try sp("/usr/bin/which", "swiftc"))
 
     print("Determining Dependency Paths...")
     let buildOutputsURL = URL(
-      fileURLWithPath: try sh(
-        """
-        swift build \
-          --configuration release \
-          --package-path \(self.packageDirectoryURL.path) \
-          --show-bin-path
-        """))
+      fileURLWithPath: try sp(
+        swiftURL.path, "build",
+        "--configuration", "release",
+        "--package-path", "self.packageDirectoryURL.path",
+        "--show-bin-path"))
 
     print("Building MMIO...")
-    _ = try sh(
-      """
-      swift build \
-        --configuration release \
-        --package-path \(self.packageDirectoryURL.path)
-      """)
+    _ = try sp(
+      swiftURL.path, "build",
+      "--configuration", "release",
+      "--package-path", self.packageDirectoryURL.path)
 
-    return .init(buildOutputsURL: buildOutputsURL)
+    return Result(
+      fileCheckURL: fileCheckURL,
+      swiftURL: swiftURL,
+      swiftcURL: swiftcURL,
+      buildOutputsURL: buildOutputsURL)
   }
 }
 
@@ -126,37 +134,32 @@ struct MMIOFileCheckTestCase {
   var testFileURL: URL
 
   func run() -> [LLVMDiagnostic] {
+
     do {
       let paths = try self.setup.run()
-
       print("Running: \(self.testFileURL.lastPathComponent)")
 
       let testOutputFileURL = paths.buildOutputsURL
-        .appending(path: self.testFileURL.lastPathComponent)
+        .appendingPathComponent("MMIOFileCheckTests.build")
+        .appendingPathComponent(self.testFileURL.lastPathComponent)
         .appendingPathExtension("ll")
 
-      _ = try sh(
-        """
-        swiftc \
-          -emit-ir \(self.testFileURL.path) \
-          -o \(testOutputFileURL.path) \
-          -O \
-          -I \(paths.buildOutputsURL.path) \
-          -load-plugin-executable \
-            \(paths.buildOutputsURL.path)/MMIOMacros#MMIOMacros \
-          -parse-as-library
-        """)
+      _ = try sp(
+        paths.swiftcURL.path,
+        "-emit-ir", self.testFileURL.path,
+        "-o", testOutputFileURL.path,
+        "-O",
+        "-I", paths.buildOutputsURL.path,
+        "-load-plugin-executable",
+        "\(paths.buildOutputsURL.path)/MMIOMacros#MMIOMacros",
+        "-parse-as-library")
 
-      _ = try sh(
-        """
-        FileCheck \
-          \(self.testFileURL.path) \
-          --input-file \(testOutputFileURL.path) \
-          --dump-input never
-        """)
-
-      _ = try sh("rm \(testOutputFileURL.path)")
-    } catch let error as ShellCommandError {
+      _ = try sp(
+        paths.fileCheckURL.path,
+        self.testFileURL.path,
+        "--input-file", testOutputFileURL.path,
+        "--dump-input", "never")
+    } catch let error as SubprocessError {
       // Parse the errors.
       var message = error.error[...]
       let diagnostics = Parser.llvmDiagnostics.run(&message)

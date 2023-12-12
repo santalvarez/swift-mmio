@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if os(macOS)
+#if os(macOS) || os(Linux)
 import Dispatch
 import Foundation
 
@@ -24,7 +24,7 @@ extension Data {
   }
 }
 
-struct ShellCommandError: Swift.Error {
+struct SubprocessError: Swift.Error {
   var command: String
   var exitCode: Int32
   var outputData: Data
@@ -34,7 +34,7 @@ struct ShellCommandError: Swift.Error {
   var error: String { self.errorData.asUTF8String() }
 }
 
-extension ShellCommandError: CustomStringConvertible {
+extension SubprocessError: CustomStringConvertible {
   var description: String {
     var description =
       "Command '\(self.command)' exited with code '\(self.exitCode)'"
@@ -46,19 +46,20 @@ extension ShellCommandError: CustomStringConvertible {
   }
 }
 
-extension ShellCommandError: LocalizedError {
+extension SubprocessError: LocalizedError {
   var errorDescription: String? { self.description }
 }
 
-func sh(
-  _ commands: String...,
+func sp(
+  _ command: String...,
   at path: String? = nil
 ) throws -> String {
-  let command = commands.joined(separator: " && ")
+  var arguments = command
+  let executable = arguments.removeFirst()
 
   let process = Process()
-  process.executableURL = URL(fileURLWithPath: "/bin/sh")
-  process.arguments = ["-ic", "export PATH=$PATH:~/bin; \(command)"]
+  process.executableURL = URL(fileURLWithPath: executable)
+  process.arguments = arguments
 
   // drain standard output and error into in-memory data.
   let drainQueue = DispatchQueue(label: "sh-drain-queue")
@@ -67,8 +68,7 @@ func sh(
   let outputPipe = Pipe()
   process.standardOutput = outputPipe
   outputPipe.fileHandleForReading.readabilityHandler = { handler in
-    let data = handler.availableData
-    drainQueue.async {
+    drainQueue.async { [data = handler.availableData] in
       outputData.append(data)
     }
   }
@@ -93,8 +93,8 @@ func sh(
   drainQueue.sync {}
 
   guard process.terminationStatus == 0 else {
-    throw ShellCommandError(
-      command: command,
+    throw SubprocessError(
+      command: command.joined(separator: " "),
       exitCode: process.terminationStatus,
       outputData: outputData,
       errorData: errorData)

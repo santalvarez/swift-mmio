@@ -25,7 +25,7 @@ services:
 
   test:
     <<: *common
-    command: /bin/bash -xcl "make test CONFIGURATION=release"
+    command: /bin/bash -xcl "make test CONFIGURATION=debug"
 
   shell:
     <<: *common

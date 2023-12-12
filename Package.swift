@@ -25,7 +25,7 @@ var package = Package(
       dependencies: ["MMIOMacros", "MMIOVolatile"]),
     .testTarget(
       name: "MMIOFileCheckTests",
-      dependencies: ["MMIOUtilities"],
+      dependencies: ["MMIO", "MMIOUtilities"],
       exclude: ["Tests"]),
     .testTarget(
       name: "MMIOInterposableTests",

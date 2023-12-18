@@ -18,11 +18,11 @@ all: test
 
 ifdef SKIP_LINT
 lint:
-	@echo "skipping linting..."
+	echo "skipping linting..."
 else
 lint:
-	@echo "linting..."
-	@swift-format lint \
+	echo "linting..."
+	time swift-format lint \
 		--configuration $(SWIFT_FORMAT_CONFIGURATION) \
 		--recursive \
 		--strict \
@@ -30,31 +30,31 @@ lint:
 endif
 
 format:
-	@echo "formatting..."
-	@swift-format format \
+	echo "formatting..."
+	time swift-format format \
 		--configuration $(SWIFT_FORMAT_CONFIGURATION) \
 		--recursive \
 		--in-place \
 		Package.swift Sources Tests
 
 build: lint
-	@echo "building..."
-	@swift build \
+	echo "building..."
+	time swift build \
 		--configuration $(CONFIGURATION) \
 		--explicit-target-dependency-import-check error
 
 test: build
-	@echo "testing..."
-	@swift test \
+	echo "testing..."
+	time swift test \
 		--configuration $(CONFIGURATION) \
 		--parallel \
 		--explicit-target-dependency-import-check error
-	@SWIFT_MMIO_FEATURE_INTERPOSABLE=1 swift test \
+	time SWIFT_MMIO_FEATURE_INTERPOSABLE=1 swift test \
 		--configuration $(CONFIGURATION) \
 		--parallel \
 		--explicit-target-dependency-import-check error
 
 clean:
-	@echo "cleaning..."
-	@swift package clean
-	@rm -rf .build
+	echo "cleaning..."
+	time swift package clean
+	rm -rf .build

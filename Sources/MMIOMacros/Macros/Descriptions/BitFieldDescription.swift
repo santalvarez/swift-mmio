@@ -18,6 +18,7 @@ struct BitFieldDescription {
   var fieldName: IdentifierPatternSyntax
   var fieldType: TypeSyntax
   var bitRanges: [BitRange]
+  var bitRangeExpressions: [ExprSyntax]
   var projectedType: ExprSyntax?
 }
 
@@ -25,12 +26,6 @@ extension BitFieldDescription {
   // FIXME: compute this once
   func storageType() -> DeclReferenceExprSyntax {
     .init(baseName: .identifier("UInt\(self.bitWidth)"))
-  }
-}
-
-extension BitFieldDescription {
-  func validate() throws {
-    // FIXME: Validate bit range overlap
   }
 }
 

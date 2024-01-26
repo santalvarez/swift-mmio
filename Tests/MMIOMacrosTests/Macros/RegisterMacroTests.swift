@@ -918,4 +918,167 @@ final class RegisterMacroTests: XCTestCase {
       indentationWidth: Self.indentationWidth)
   }
 }
+
+// Bit range validation
+extension RegisterMacroTests {
+  func test_bitRangeWithBoundsOutOfValidRegisterRange_emitsDiagnostics() {
+    assertMacroExpansion(
+      """
+      @Register(bitWidth: 0x8)
+      struct S {
+        @Reserved(bits: ...)
+        var v: V
+      }
+      """,
+      expandedSource: """
+        struct S {
+          @available(*, unavailable)
+          var v: V {
+            get {
+              fatalError()
+            }
+          }
+
+          private init() {
+            fatalError()
+          }
+
+          private var _never: Never
+
+          enum V: ContiguousBitField {
+            typealias Storage = UInt8
+            static let bitRange = 0 ..< 8
+          }
+
+          struct Raw: RegisterValueRaw {
+            typealias Value = S
+            typealias Storage = UInt8
+            var storage: Storage
+            init(_ storage: Storage) {
+              self.storage = storage
+            }
+            init(_ value: Value.ReadWrite) {
+              self.storage = value.storage
+            }
+            var v: UInt8 {
+              @inlinable @inline(__always) get {
+                V.extract(from: self.storage)
+              }
+              @inlinable @inline(__always) set {
+                V.insert(newValue, into: &self.storage)
+              }
+            }
+          }
+
+          typealias Read = ReadWrite
+
+          typealias Write = ReadWrite
+
+          struct ReadWrite: RegisterValueRead, RegisterValueWrite {
+            typealias Value = S
+            var storage: UInt8
+            init(_ value: ReadWrite) {
+              self.storage = value.storage
+            }
+            init(_ value: Raw) {
+              self.storage = value.storage
+            }
+
+          }
+        }
+
+        extension S: RegisterValue {
+        }
+        """,
+      diagnostics: [],
+      macros: Self.macros,
+      indentationWidth: Self.indentationWidth)
+
+    assertMacroExpansion(
+      """
+      @Register(bitWidth: 0x8)
+      struct S {
+        @Reserved(bits: ..<10)
+        var v: V
+      }
+      """,
+      expandedSource: """
+        struct S {
+          @available(*, unavailable)
+          var v: V {
+            get {
+              fatalError()
+            }
+          }
+
+          private init() {
+            fatalError()
+          }
+
+          private var _never: Never
+
+          enum V: ContiguousBitField {
+            typealias Storage = UInt8
+            static let bitRange = 0 ..< 8
+          }
+
+          struct Raw: RegisterValueRaw {
+            typealias Value = S
+            typealias Storage = UInt8
+            var storage: Storage
+            init(_ storage: Storage) {
+              self.storage = storage
+            }
+            init(_ value: Value.ReadWrite) {
+              self.storage = value.storage
+            }
+            var v: UInt8 {
+              @inlinable @inline(__always) get {
+                V.extract(from: self.storage)
+              }
+              @inlinable @inline(__always) set {
+                V.insert(newValue, into: &self.storage)
+              }
+            }
+          }
+
+          typealias Read = ReadWrite
+
+          typealias Write = ReadWrite
+
+          struct ReadWrite: RegisterValueRead, RegisterValueWrite {
+            typealias Value = S
+            var storage: UInt8
+            init(_ value: ReadWrite) {
+              self.storage = value.storage
+            }
+            init(_ value: Raw) {
+              self.storage = value.storage
+            }
+
+          }
+        }
+
+        extension S: RegisterValue {
+        }
+        """,
+      diagnostics: [
+        .init(
+          message: ErrorDiagnostic.bitFieldOutOfRange(
+            fieldName: "v",
+            bitRange: "..<10",
+            bitWidth: 0x8).message,
+          line: 3,
+          column: 19,
+          highlight: "..<10"),
+      ],
+      macros: Self.macros,
+      indentationWidth: Self.indentationWidth)
+  }
+
+  func test_bitFieldWithOverlappingBitRanges_emitsDiagnostics() {
+
+  }
+}
+
 #endif

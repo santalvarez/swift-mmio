@@ -10,6 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 import SwiftSyntax
+import SwiftSyntaxMacros
 
 struct RegisterDescription {
   var name: TokenSyntax
@@ -20,10 +21,12 @@ struct RegisterDescription {
 }
 
 extension RegisterDescription {
-  func validate() throws {
+  func validate(
+    in context: MacroContext<some ParsableMacro, some MacroExpansionContext>
+  ) {
     // Validate bit range in each bit field.
     for bitField in self.bitFields {
-      try bitField.validate()
+      bitField.validate(in: context)
     }
 
     // FIXME: Validate bit range overlap across bit fields.

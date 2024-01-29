@@ -87,3 +87,9 @@ struct Bank {
   @RegisterBank(offset: 0x8, stride: 0x10, count: 100)
   var asym: RegisterArray<SampleAsym>
 }
+
+@Register(bitWidth: 0x40)
+struct S {
+  @Reserved(bits: 0..<24, 8..<32, 16..<48, 36..<44)
+  var field: Field
+}

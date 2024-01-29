@@ -1077,7 +1077,105 @@ extension RegisterMacroTests {
   }
 
   func test_bitFieldWithOverlappingBitRanges_emitsDiagnostics() {
+    assertMacroExpansion(
+      """
+      @Register(bitWidth: 64)
+      struct S {
+        @Reserved(bits: 0..<24, 8..<32, 16..<48, 36..<44)
+        var field: Field
+      }
+      """,
+      expandedSource: """
+        struct S {
+          @available(*, unavailable)
+          var field: Field {
+            get {
+              fatalError()
+            }
+          }
 
+          private init() {
+            fatalError()
+          }
+
+          private var _never: Never
+
+          enum Field: DiscontiguousBitField {
+            typealias Storage = UInt64
+            static let bitRanges = [0 ..< 24, 8 ..< 32, 16 ..< 48, 36 ..< 44]
+          }
+
+          struct Raw: RegisterValueRaw {
+            typealias Value = S
+            typealias Storage = UInt64
+            var storage: Storage
+            init(_ storage: Storage) {
+              self.storage = storage
+            }
+            init(_ value: Value.ReadWrite) {
+              self.storage = value.storage
+            }
+            var field: UInt64 {
+              @inlinable @inline(__always) get {
+                Field.extract(from: self.storage)
+              }
+              @inlinable @inline(__always) set {
+                Field.insert(newValue, into: &self.storage)
+              }
+            }
+          }
+
+          typealias Read = ReadWrite
+
+          typealias Write = ReadWrite
+
+          struct ReadWrite: RegisterValueRead, RegisterValueWrite {
+            typealias Value = S
+            var storage: UInt64
+            init(_ value: ReadWrite) {
+              self.storage = value.storage
+            }
+            init(_ value: Raw) {
+              self.storage = value.storage
+            }
+
+          }
+        }
+
+        extension S: RegisterValue {
+        }
+        """,
+      diagnostics: [
+        .init(
+          message: ErrorDiagnostic.bitFieldContainsOverlappingBitRanges(
+            fieldName: "field",
+            overlappingRangeExpressions: ["0..<24", "8..<32", "16..<48", "36..<44"])
+            .message,
+          line: 4,
+          column: 7,
+          highlight: "field",
+          notes: [
+            .init(
+              message: "bit subrange '8..<24' of bit range '0..<24' overlaps bit ranges '8..<32' and '16..<48'",
+              line: 3,
+              column: 19),
+            .init(
+              message: "bit subrange '8..<32' of bit range '8..<32' overlaps bit ranges '0..<24' and '16..<48'",
+              line: 3,
+              column: 27),
+            .init(
+              message: "bit subranges '16..<32' and '36..<44' of bit range '16..<48' overlap bit ranges '0..<24', '8..<32', and '36..<44'",
+              line: 3,
+              column: 35),
+            .init(
+              message: "bit subrange '36..<44' of bit range '36..<44' overlaps bit range '16..<48'",
+              line: 3,
+              column: 44),
+          ]
+        ),
+      ],
+      macros: Self.macros,
+      indentationWidth: Self.indentationWidth)
   }
 }
 

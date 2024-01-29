@@ -53,6 +53,32 @@ extension BitRange {
   }
 }
 
+extension BitRange {
+  func rangeOverlapping(_ other: Self) -> Range<Int>? {
+    let (lhs, rhs) = self <= other ? (self, other) : (other, self)
+
+    let lhsLowerBound = lhs.canonicalizedLowerBound
+    let lhsUpperBound = lhs.canonicalizedUpperBound
+    let rhsLowerBound = rhs.canonicalizedLowerBound
+    let rhsUpperBound = rhs.canonicalizedUpperBound
+
+    //      lower   lower           upper   upper
+    //      ╎       ╎               ╎       ╎
+    // lhs: •───────────────────────◦       ╎
+    // rhs: ╎       •───────────────────────◦
+    guard rhsLowerBound <= lhsUpperBound else {
+      return nil
+    }
+
+    let lowerBound = max(lhsLowerBound, rhsLowerBound)
+    var upperBound = min(lhsUpperBound, rhsUpperBound)
+    if upperBound < .max {
+      upperBound += 1
+    }
+    return lowerBound..<upperBound
+  }
+}
+
 extension BitRange: Comparable {
   static func < (lhs: BitRange, rhs: BitRange) -> Bool {
     guard lhs.canonicalizedLowerBound == rhs.canonicalizedLowerBound else {

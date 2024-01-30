@@ -1147,7 +1147,7 @@ extension RegisterMacroTests {
         """,
       diagnostics: [
         .init(
-          message: ErrorDiagnostic.bitFieldContainsOverlappingBitRanges(
+          message: ErrorDiagnostic.bitFieldOverlappingBitRanges(
             fieldName: "field",
             overlappingRangeExpressions: ["0..<24", "8..<32", "16..<48", "36..<44"])
             .message,

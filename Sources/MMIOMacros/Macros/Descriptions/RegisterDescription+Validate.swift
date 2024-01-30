@@ -14,75 +14,49 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 import SwiftSyntaxMacroExpansion
 
-extension BitFieldDescription {
+extension RegisterDescription {
   func validate(
     in context: MacroContext<some ParsableMacro, some MacroExpansionContext>
   ) {
-    precondition(self.bitRanges.count == self.bitRangeExpressions.count)
-    for index in self.bitRanges.indices {
-      self.validateBounds(
-        bitRange: self.bitRanges[index],
-        bitRangeExpression: self.bitRangeExpressions[index],
-        in: context)
+    // Validate bit range in each bit field.
+    for bitField in self.bitFields {
+      bitField.validate(in: context)
     }
 
-    if self.bitRanges.count > 1 {
-      self.validateOverlappingRanges(in: context)
-    }
-  }
-
-  func validateBounds(
-    bitRange: BitRange,
-    bitRangeExpression: ExprSyntax,
-    in context: MacroContext<some ParsableMacro, some MacroExpansionContext>
-  ) {
-    let range = 0..<self.bitWidth
-    if let bound = bitRange.inclusiveLowerBound, !range.contains(bound) {
-      _ = context.error(
-        at: bitRangeExpression,
-        message: .bitFieldOutOfRange(
-          fieldName: "\(self.fieldName)",
-          bitRange: "\(bitRangeExpression)",
-          bitWidth: self.bitWidth))
-      return
-    }
-
-    if let bound = bitRange.inclusiveUpperBound, !range.contains(bound) {
-      _ = context.error(
-        at: bitRangeExpression,
-        message: .bitFieldOutOfRange(
-          fieldName: "\(self.fieldName)",
-          bitRange: "\(bitRangeExpression)",
-          bitWidth: self.bitWidth))
-      return
-    }
+    // FIXME: Validate bit range overlap across bit fields.
   }
 
   /// Walk the bit ranges forming error diagnostics for overlapping of ranges.
   ///
-  /// Given the example bit field:
+  /// Given the example bit fields:
   /// ```
-  /// @BitField(bits: 0..<24, 8..<32, 16..<48, 36..<44)
-  /// var field: Field
+  /// @BitField(bits: 0..<24, 36..<44)
+  /// var field0: Field1
+  ///
+  /// @BitField(bits: 8..<32)
+  /// var field1: Field1
+  ///
+  /// @BitField(bits: 16..<48)
+  /// var field2: Field2
   /// ```
   ///
   /// The ranges visually look like:
   /// ```
-  /// 0       8       16      24      32  36      44  48
-  /// ╎       ╎       ╎       ╎       ╎   ╎       ╎   ╎
-  /// •───────────────────────◦       ╎   ╎       ╎   ╎
-  /// ╎       •───────────────────────◦   ╎       ╎   ╎
-  /// ╎       ╎       •───────────────────────────────◦
-  /// ╎       ╎       ╎       ╎       ╎   •───────◦   ╎
-  /// ╎       ╎       ╎       ╎       ╎   ╎       ╎   ╎
-  /// 0       8       16      24      32  36      44  48
+  ///         0       8       16      24      32  36      44  48
+  ///         ╎       ╎       ╎       ╎       ╎   ╎       ╎   ╎
+  /// field0: •───────────────────────◦       ╎   ╎       ╎   ╎
+  /// field1: ╎       •───────────────────────◦   ╎       ╎   ╎
+  /// field2: ╎       ╎       •───────────────────────────────◦
+  /// field0: ╎       ╎       ╎       ╎       ╎   •───────◦   ╎
+  ///         ╎       ╎       ╎       ╎       ╎   ╎       ╎   ╎
+  ///         0       8       16      24      32  36      44  48
   /// ```
   ///
   /// The following diagnostics will be emitted:
   /// ```
-  /// <location> error: bit field 'field' references overlapping bit ranges \
+  /// <location> error: bit field 'field0' references bit ranges \
   /// '0..<24', '8..<40', '16..<48', and '36..<44'
-  /// var field: Field
+  /// var field0: Field0
   ///     ^~~~~
   ///
   /// <location> note: bit subrange '8..<24' of bit range '0..<24' overlaps \
@@ -240,50 +214,51 @@ extension BitFieldDescription {
   }
 }
 
-extension ErrorDiagnostic {
-  static func bitFieldOutOfRange(
-    fieldName: String,
-    bitRange: String,
-    bitWidth: Int
-  ) -> Self {
-    .init(
-      """
-      bit field '\(fieldName)' references bit range '\(bitRange)' which falls \
-      outside of the bit range '0..<\(bitWidth)' of the enclosing register
-      """)
-  }
-
-  static func bitFieldOverlappingBitRanges(
-    fieldName: String,
-    overlappingRangeExpressions: [String]
-  ) -> Self {
-    precondition(overlappingRangeExpressions.count > 1)
-    return .init(
-      """
-      bit field '\(fieldName)' references overlapping bit ranges \
-      \(list: overlappingRangeExpressions, separator: ",", conjunction: "and")
-      """)
-  }
-}
-
-extension Note {
-  static func bitFieldOverlappingBitRanges(
-    bitRange: ExprSyntax,
-    overlappingRanges: [Range<Int>],
-    overlappingExpressions: [ExprSyntax]
-  ) -> Note {
-    let pluralizeSubranges = overlappingRanges.count != 1
-    let pluralizeRanges = overlappingExpressions.count != 1
-    return .init(
-      node: Syntax(bitRange),
-      message: MacroExpansionNoteMessage(
-        """
-        bit subrange\(pluralizeSubranges ? "s" : "") \
-        \(list: overlappingRanges, separator: ",", conjunction: "and") of bit \
-        range '\(bitRange.trimmed)' overlap\(pluralizeSubranges ? "" : "s") \
-        bit range\(pluralizeRanges ? "s" : "") \
-        \(list: overlappingExpressions, separator: ",", conjunction: "and")
-        """
-      ))
-  }
-}
+//extension ErrorDiagnostic {
+//  static func bitFieldOutOfRange(
+//    fieldName: String,
+//    bitRange: String,
+//    bitWidth: Int
+//  ) -> Self {
+//    .init(
+//      """
+//      bit field '\(fieldName)' references bit range '\(bitRange)' which falls \
+//      outside of the bit range '0..<\(bitWidth)' of the enclosing register
+//      """)
+//  }
+//
+//  static func bitFieldOverlappingBitRanges(
+//    fieldName: String,
+//    overlappingRangeExpressions: [String]
+//  ) -> Self {
+//    precondition(overlappingRangeExpressions.count > 1)
+//    return .init(
+//      """
+//      bit field '\(fieldName)' references overlapping bit ranges \
+//      \(list: overlappingRangeExpressions, separator: ",", conjunction: "and")
+//      """)
+//  }
+//}
+//
+//extension Note {
+//  static func bitFieldOverlappingBitRanges(
+//    bitRange: ExprSyntax,
+//    overlappingRanges: [Range<Int>],
+//    overlappingExpressions: [ExprSyntax]
+//  ) -> Note {
+//    let pluralizeSubranges = overlappingRanges.count != 1
+//    let pluralizeRanges = overlappingExpressions.count != 1
+//    return .init(
+//      node: Syntax(bitRange),
+//      message: MacroExpansionNoteMessage(
+//        """
+//        bit subrange\(pluralizeSubranges ? "s" : "") \
+//        \(list: overlappingRanges, separator: ",", conjunction: "and") of bit \
+//        range '\(bitRange.trimmed)' overlap\(pluralizeSubranges ? "" : "s") \
+//        bit range\(pluralizeRanges ? "s" : "") \
+//        \(list: overlappingExpressions, separator: ",", conjunction: "and")
+//        """
+//      ))
+//  }
+//}
+//

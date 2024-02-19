@@ -23,7 +23,7 @@ public struct RegisterArray<Value> where Value: RegisterValue {
   @inlinable @inline(__always)
   static func preconditionAligned(unsafeAddress: UInt, stride: UInt) {
     let alignment = MemoryLayout<Value.Raw.Storage>.alignment
-    #if $Embedded
+    #if hasFeature(Embedded)
     // FIXME: Embedded doesn't have static interpolated strings yet
     precondition(
       unsafeAddress.isMultiple(of: UInt(alignment)),
@@ -75,7 +75,7 @@ extension RegisterArray {
   subscript<Index>(
     _ index: Index
   ) -> Register<Value> where Index: BinaryInteger {
-    #if $Embedded
+    #if hasFeature(Embedded)
     // FIXME: Embedded doesn't have static interpolated strings yet
     precondition(
       0 <= index && index < self.count,

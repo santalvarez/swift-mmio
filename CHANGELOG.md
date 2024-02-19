@@ -52,7 +52,7 @@ Add new items at the end of the relevant section under **Unreleased**.
 
 ### Fixes
 
-- Replaces the use of `hasFeature(Embedded)` with `$Embedded` for proper
+- Replaces the use of `!hasFeature(Embedded)` with `$Embedded` for proper
   compilation condition checking. [#60]
 - Corrects the generation of placeholder attributes for Macros with multiple
   arguments, ensuring proper commas between the arguments. [#63]

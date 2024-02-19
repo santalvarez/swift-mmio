@@ -61,7 +61,7 @@ where Self: BitFieldProjectable, RawValue: FixedWidthInteger {
   where Storage: FixedWidthInteger & UnsignedInteger {
     // Ensure the storage type can fully represent all the bits of `Self`.
     let storageBitWidth = MemoryLayout<Storage>.size * 8
-    #if hasFeature(Embedded)
+    #if !hasFeature(Embedded)
     // FIXME: Embedded doesn't have static interpolated strings yet
     precondition(
       storageBitWidth >= Self.bitWidth,
@@ -84,7 +84,7 @@ where Self: BitFieldProjectable, RawValue: FixedWidthInteger {
     // Attempt to form a valid value of `Self` from the `rawValue`.
     guard let value = Self(rawValue: rawValue) else {
       // Trap if the `rawValue` is not a valid value of `Self`.
-      #if hasFeature(Embedded)
+      #if !hasFeature(Embedded)
       // FIXME: Embedded doesn't have static interpolated strings yet
       preconditionFailure(
         """
@@ -103,7 +103,7 @@ where Self: BitFieldProjectable, RawValue: FixedWidthInteger {
   where Storage: FixedWidthInteger & UnsignedInteger {
     // Ensure the storage type can fully represent all the bits of `Self`.
     let storageBitWidth = MemoryLayout<Storage>.size * 8
-    #if hasFeature(Embedded)
+    #if !hasFeature(Embedded)
     // FIXME: Embedded doesn't have static interpolated strings yet
     precondition(
       storageBitWidth >= Self.bitWidth,

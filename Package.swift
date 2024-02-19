@@ -23,7 +23,10 @@ var package = Package(
   targets: [
     .target(
       name: "MMIO",
-      dependencies: ["MMIOMacros", "MMIOVolatile"]),
+      dependencies: ["MMIOMacros", "MMIOVolatile"],
+      swiftSettings: [
+        .enableExperimentalFeature("Embedded"),
+      ]),
     .testTarget(
       name: "MMIOFileCheckTests",
       dependencies: ["MMIOUtilities"],

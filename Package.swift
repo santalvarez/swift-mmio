@@ -26,6 +26,7 @@ var package = Package(
       dependencies: ["MMIOMacros", "MMIOVolatile"],
       swiftSettings: [
         .enableExperimentalFeature("Embedded"),
+        .unsafeFlags(["-wmo", "-Xcc", "-mthumb"])
       ]),
     .testTarget(
       name: "MMIOFileCheckTests",
